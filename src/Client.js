@@ -764,8 +764,16 @@ class Client extends EventEmitter {
      * Closes the client
      */
     async destroy() {
-        await this.pupPage.close();
-        await this.authStrategy.destroy();
+
+        if(this.browser.pages().length <=1)
+        {
+            await this.browser.close();
+        }
+        else {
+            await this.pupPage.close();
+        }
+
+        return this.authStrategy.destroy();
     }
 
     /**
