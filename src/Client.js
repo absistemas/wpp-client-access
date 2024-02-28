@@ -97,19 +97,15 @@ class Client extends EventEmitter {
         await this.authStrategy.beforeBrowserInitialized();
 
         const puppeteerOpts = this.options.puppeteer;
-        if (puppeteerOpts && puppeteerOpts.browserWSEndpoint) {
-            browser = await puppeteer.connect(puppeteerOpts);
-            page = await browser.newPage();
-        } else {
-            const browserArgs = [...(puppeteerOpts.args || [])];
-            if(!browserArgs.find(arg => arg.includes('--user-agent'))) {
-                browserArgs.push(`--user-agent=${this.options.userAgent}`);
-            }
-
-            browser = await puppeteer.launch({...puppeteerOpts, args: browserArgs});
-            page = (await browser.pages())[0];
+        
+        const browserArgs = [...(puppeteerOpts.args || [])];
+        if(!browserArgs.find(arg => arg.includes('--user-agent'))) {
+            browserArgs.push(`--user-agent=${this.options.userAgent}`);
         }
 
+        browser = await puppeteer.launch({...puppeteerOpts, args: browserArgs});
+        page = (await browser.pages())[0];
+        
         if (this.options.proxyAuthentication !== undefined) {
             await page.authenticate(this.options.proxyAuthentication);
         }
@@ -765,15 +761,16 @@ class Client extends EventEmitter {
      */
     async destroy() {
 
-        if(this.browser.pages().length <=1)
-        {
-            await this.browser.close();
-        }
-        else {
-            await this.pupPage.close();
-        }
+        return new Promise((resolve, _reject) => {
 
-        return this.authStrategy.destroy();
+            this.pupBrowser.close()
+                .then(() => {})
+                .finally(async () => {
+
+                    return resolve(await this.authStrategy.destroy());
+                });
+        });
+
     }
 
     /**
